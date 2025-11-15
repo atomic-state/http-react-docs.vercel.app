@@ -1,139 +1,99 @@
 import { Callout } from 'nextra-theme-docs'
 
-# All hooks
+# All hooks Reference
 
-This is a list of the hooks available in `http-react`
+This is a complete reference of all hooks and utilities available in `http-react`.
+
+## Hooks
 
 ### `useBlob`
 
-Returns a `Blob` of the request
-
+Returns a `Blob` or object URL from the request response.
 ```jsx
 import { useBlob } from 'http-react'
 
 function App() {
   const { data } = useBlob('/logo.png', { objectURL: true })
 
-  return <img src={data} />
+  return <img src={data} alt="Logo" />
 }
 ```
 
 <Callout type="info">
-
-If `objectURL` is not present, `data` will be a `Blob`
-
+When `objectURL` is false or omitted, `data` will be a `Blob` object instead of a URL string.
 </Callout>
 
 ### `useCode`
 
-Returns the status code of a request
-
+Returns the HTTP status code of a request.
 ```jsx
-const statusCode = useCode('id')
+const statusCode = useCode('key')
 
-return <p>Code: {statusCode}</p>
+return <p>Status: {statusCode}</p>
 ```
 
 ### `useConfig`
 
-Returns the config of a request
-
+Returns the configuration of a request or the nearest `FetchConfig`.
 ```jsx
-const config = useConfig('id')
+const config = useConfig('key')
 
 return <pre>{JSON.stringify(config, null, 2)}</pre>
 ```
 
 <Callout type="info">
-
-If an id is not passed, the configuration of the nearest `FetchConfig` will be returned instead
-
+If no ID is provided, returns the configuration from the nearest `FetchConfig` component.
 </Callout>
 
-### `useGET`
+### HTTP Method Hooks
 
-The same as `useFetch`, but will always send a `GET` request
+Convenience hooks that work like `useFetch` but automatically set the HTTP method.
 
 <Callout type="info">
-
-There is a hook for each HTTP request method. Learn more about HTTP request methods [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods)
-
+Learn more about HTTP methods in the [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods).
 </Callout>
 
-### `useHEAD`
-
-### `useLINK`
-
-### `useUNLINK`
-
-### `useOPTIONS`
-
-### `usePATCH`
-
-### `usePOST`
-
-### `usePURGE`
-
-### `usePUT`
-
-### `useDELETE`
-
----
+- `useGET` - Same as `useFetch` with `method: 'GET'`
+- `useHEAD`
+- `useLINK`
+- `useUNLINK`
+- `useOPTIONS`
+- `usePATCH`
+- `usePOST`
+- `usePURGE`
+- `usePUT`
+- `useDELETE`
 
 ### `useData`
 
-Returns the data of a request
-
+Returns only the data from a request.
 ```jsx
-const data = useData('id')
+const data = useData('key')
 
 return <p>Name: {data.name}</p>
 ```
-
----
 
 ### `useError`
 
-Returns the error state of a request
-
+Returns the error state of a request.
 ```jsx
-const error = useError('id')
+const error = useError('key')
 
-if (error) return <p>Error</p>
+if (error) return <p>An error occurred</p>
 ```
-
----
 
 ### `useFetch`
 
-Sends a request. This is the default export.
+The primary hook for making HTTP requests. This is the default export.
 
 <Callout type='info'>
-  You can learn more about the `useFetch` API in the [API section](/docs/api)
+  See the complete [API documentation](/docs/api) for all available options.
 </Callout>
 
----
-
-### `useFetchId`
-
-Returns everything from a request using its `id`
-
-```jsx
-const { data, loading, error } = useFetchId('id')
-
-if (loading) return <p>Loading</p>
-
-if (error) return <p>Error</p>
-
-return <p>Name: {data.name}</p>
-```
-
----
 
 ### `useGql`
 
-Sends a graphql request
-
+Sends a GraphQL request.
 ```jsx
 import { gql, useGql } from 'http-react'
 
@@ -154,18 +114,15 @@ function App() {
     }
   })
 
-  if (loading) return <p>Loading</p>
+  if (loading) return <p>Loading...</p>
 
   return <p>{data.data.profile.name}</p>
 }
 ```
 
----
-
 ### `useImperative`
 
-Returns an object similar to Axios to make HTTP requests imperatively. It includes any configuration passed from the nearest `FetchConfig` parent
-
+Returns an Axios-like object for making imperative HTTP requests. Includes configuration from the nearest `FetchConfig`.
 ```jsx
 import { useImperative } from 'http-react'
 
@@ -174,7 +131,7 @@ function App() {
 
   useEffect(() => {
     async function getInfo() {
-      const { data, error, config } = fetcher.get('/info')
+      const { data, error, config } = await fetcher.get('/info')
       console.log(data)
     }
     getInfo()
@@ -182,24 +139,18 @@ function App() {
 }
 ```
 
----
-
 ### `useLoading`
 
-Returns the loading state of a request
-
+Returns the loading state of a request.
 ```jsx
-const loading = useLoading('id')
+const loading = useLoading('key')
 
-if (loading) return <p>Loading</p>
+if (loading) return <p>Loading...</p>
 ```
-
----
 
 ### `useMutate`
 
-Returns the function that mutates a request data
-
+Returns a function to mutate request data optimistically.
 ```jsx
 const mutateUser = useMutate('user')
 
@@ -222,185 +173,147 @@ return (
 )
 ```
 
----
-
 ### `useRequestEnd`
 
-Returns the Date a request ended
-
+Returns the Date when a request completed.
 ```jsx
-const lastSync = useRequestEnd('id')
+const lastSync = useRequestEnd('key')
 
-if (!lastSync) return <p>Waiting sync...</p>
+if (!lastSync) return <p>Waiting for sync...</p>
 
-return <p>Last sync: {lastSync.toLocaleDateString()}
+return <p>Last sync: {lastSync.toLocaleDateString()}</p>
 ```
-
----
 
 ### `useRequestStart`
 
-Returns the Date a request started
-
+Returns the Date when a request started.
 ```jsx
-const startup = useRequestStart('id')
+const startup = useRequestStart('key')
 
 if (!startup) return <p>Request hasn't been sent</p>
 
-return <p>Request started: {startup.toLocaleDateString()}
+return <p>Started: {startup.toLocaleDateString()}</p>
 ```
-
----
 
 ### `useResolve`
 
-Works as an effect that runs when a request completes
-
+Runs an effect when a request completes successfully.
 ```jsx
-useResolve('id', (data) => {
-  console.log('Data sync:', data)
+useResolve('key', (data) => {
+  console.log('Data synced:', data)
 })
 
-useResolve('another-id', (data) => {
-  console.log('Another data was sync:', data)
+useResolve('another-key', (data) => {
+  console.log('Another request synced:', data)
 })
 ```
-
----
 
 ### `useResponseTime`
 
-Returns the time it took to complete a request
-
+Returns the time taken to complete a request in milliseconds.
 ```jsx
-const responseTime = useResponseTime('id')
+const responseTime = useResponseTime('key')
 
 if (!responseTime) return <p>Loading...</p>
 
-return <p>Loaded in {responseTime} miliseconds</p>
+return <p>Loaded in {responseTime}ms</p>
 ```
-
----
 
 ### `useText`
 
-Returns the response of a request as text:
-
+Returns the response as plain text.
 ```jsx
-const data = useText('id')
+const data = useText('key')
 
 return <p>{data}</p>
 ```
 
----
-
 ### `useExpiration`
 
-Returns the `expiration` date of a request:
-
+Returns the expiration date of cached request data.
 ```jsx
-const expiration = useExpiration('id')
+const expiration = useExpiration('key')
 
 return <p>Expires: {expiration?.toLocaleTimeString()}</p>
 ```
 
----
-
 ### `useHasData`
 
-Returns the `hasData` value of a request
-
+Returns whether a request has data available.
 ```jsx
-const hasData = useHasData('id')
+const hasData = useHasData('key')
 
-return <p>{hasData ? 'Data exists' : 'There is no data...'}</p>
+return <p>{hasData ? 'Data exists' : 'No data available'}</p>
 ```
-
----
 
 ### `useDebounceFetch`
 
-Makes a request with debouncing.
-
+Makes a request with debouncing to avoid excessive API calls.
 ```jsx
 const [q, setQ] = useState('')
+
 const { data: results } = useDebounceFetch('/search', {
   auto: q,
-  query: {
-    q
-  },
-  debounce: '2 sec' // Wait 2 seconds after props change to send a new request
+  query: { q },
+  debounce: '2 sec' // Wait 2 seconds after changes before sending request
 })
 ```
 
-## Helpers
+## Utility Functions
 
-Useful helper functions. Most of them are used internally but are available as exports
+Helper functions used internally but available as exports.
 
 ### `hasBaseUrl`
 
-Returns `true` if the string is a url using the `HTTP` or `HTTPS` protocols
-
+Checks if a string is a complete URL with HTTP/HTTPS protocol.
 ```js
 import { hasBaseUrl } from 'http-react'
 
-hasBaseUrl('https://facebook.com') // -> true
-hasBaseUrl('http://localhost:8000') // -> true
-hasBaseUrl('netflix.com') // -> false
+hasBaseUrl('https://facebook.com') // true
+hasBaseUrl('http://localhost:8000') // true
+hasBaseUrl('netflix.com') // false
 ```
-
----
 
 ### `isDefined`
 
-Returns `true` if the input is not `undefined`
-
+Checks if a value is not `undefined`.
 ```js
 import { isDefined } from 'http-react'
 
-isDefined(null) // -> true
-isDefined('') // -> true
-isDefined() // -> false
-isDefined(undefined) // -> false
+isDefined(null) // true
+isDefined('') // true
+isDefined() // false
+isDefined(undefined) // false
 ```
-
----
 
 ### `isFunction`
 
-Returns `true` if the input is a function
-
+Checks if a value is a function.
 ```js
 import { isFunction } from 'http-react'
 
-isFunction(window.location.reload) // -> true
-isFunction('') // -> false
-isFunction(() => {}) // -> true
-isFunction(function () {}) // -> true
+isFunction(window.location.reload) // true
+isFunction('') // false
+isFunction(() => {}) // true
+isFunction(function () {}) // true
 ```
-
----
 
 ### `notNull`
 
-Returns `true` if the input is a not null
-
+Checks if a value is not null.
 ```js
 import { notNull } from 'http-react'
 
-notNull({}) // -> true
-notNull('') // -> true
-notNull(0) // -> true
-notNull(null) // -> false
-notNull(document.getElementById('non-existent-element')) // -> false
+notNull({}) // true
+notNull('') // true
+notNull(0) // true
+notNull(null) // false
+notNull(document.getElementById('non-existent')) // false
 ```
-
----
 
 ### `revalidate`
 
-Makes `useFetch` requests run again (if they are not loading):
-
+Forces requests to refetch if they're not currently loading.
 ```js
 import useFetch, { revalidate } from 'http-react'
 
@@ -408,31 +321,21 @@ function App() {
   const { data } = useFetch('/api')
 
   return (
-    <button
-      onClick={() => {
-        revalidate('GET /api')
-      }}
-    >
-      Revalidate
+    <button onClick={() => revalidate('GET /api')}>
+      Refresh
     </button>
   )
 }
 ```
 
-You can pass multiple ids:
-
+Revalidate multiple requests at once:
 ```js
 import useFetch, { revalidate } from 'http-react'
 
 function App() {
   useFetch('/api')
   useFetch('/another')
-
-  useFetch('/other', {
-    id: {
-      name: 'Other'
-    }
-  })
+  useFetch('/other', { key: { name: 'Other' } })
 
   return (
     <button
@@ -440,76 +343,59 @@ function App() {
         revalidate([
           'GET /api',
           'GET /another',
-
-          // The id that was passed to the third 'useFetch'
-          {
-            name: 'Other'
-          }
+          { name: 'Other' }
         ])
       }}
     >
-      Revalidate
+      Refresh All
     </button>
   )
 }
 ```
 
----
-
 ### `serialize`
 
-Returns a serialized string of the input
-
+Serializes an object to a JSON string.
 ```js
 import { serialize } from 'http-react'
 
-serialize({ name: 'dany' }, null, 2) // -> '{"name":"dany"}'
+serialize({ name: 'dany' }, null, 2) // '{"name":"dany"}'
 ```
-
----
 
 ### `setURLParams`
 
-Parses url params present in a string
-
+Replaces URL parameters with actual values. This is type safe and parses the params from the URL string.
 ```js
 import { setURLParams } from 'http-react'
 
-setURLParams('api/[path]/:id', { path: 'books', id: 10 }) // -> 'api/books/10'
+setURLParams('api/[path]/:id', { path: 'books', id: 10 })
+// 'api/books/10'
 
-setURLParams('https://api/[id]?photo=some-photo.png', {
-  id: 24
-}) // -> 'https://api/24?photo=some-photo.png'
+setURLParams('https://api/[id]?photo=some-photo.png', { id: 24 })
+// 'https://api/24?photo=some-photo.png'
 ```
-
----
 
 ### `isFormData`
 
-Returns `true` if the input is an instance of `FormData`
-
+Checks if a value is a `FormData` instance.
 ```js
 import { isFormData } from 'http-react'
 
-isFormData({}) // -> false
-isFormData(new FormData()) // -> true
+isFormData({}) // false
+isFormData(new FormData()) // true
 ```
-
----
 
 ### `defaultCache`
 
-The default cache used by `http-react` to save data
-
----
+The default cache implementation used by http-react for storing request data.
 
 ### `mutateData`
 
-A function to modify `useFetch` data that can be used from outside of React. It is very useful for UIs that are optimistic. It accepts the entries of the requests to mutate.
-
+Mutates request data outside of React components. Useful for optimistic UI updates.
 ```js
-import { useFetch, mutateData } from 'http-react'
+import { mutateData } from 'http-react'
 
+// Mutate without revalidation
 function onlyMutate() {
   mutateData([
     'GET /profile',
@@ -520,6 +406,7 @@ function onlyMutate() {
   ])
 }
 
+// Mutate with revalidation
 function mutateAndRevalidate() {
   mutateData([
     'GET /profile',
@@ -527,44 +414,32 @@ function mutateAndRevalidate() {
       ...prev,
       name: 'new name'
     }),
-    true // this will revalidate after mutation
+    true // Revalidate after mutation
   ])
 }
 
+// Mutate multiple requests
 function mutateMany() {
   mutateData(
     [
       'GET /profile',
-      (prev) => ({
-        ...prev,
-        name: 'new name'
-      }),
-      true // this will revalidate after mutation
+      (prev) => ({ ...prev, name: 'new name' }),
+      true
     ],
     [
       'GET /post',
-      {
-        title: ''
-      },
-      true // this will revalidate after mutation
+      { title: '' },
+      true
     ],
     [
-      {
-        this_id: 'is_an_object"
-      },
-      {
-        title: 'New title'
-      },
-      true // this will revalidate after mutation
+      { this_id: 'is_an_object' },
+      { title: 'New title' },
+      true
     ]
   )
 }
-
-function App() {}
 ```
-
----
 
 ### `queryProvider`
 
-For `GraphQL` requests. Learn more in the [GraphQL section](/docs/graphql)
+Creates a typed GraphQL client. See the [GraphQL documentation](/docs/graphql) for details.

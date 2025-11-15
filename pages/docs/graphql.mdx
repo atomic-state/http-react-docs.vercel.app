@@ -2,12 +2,13 @@ import { Callout } from 'nextra-theme-docs'
 
 # GraphQL
 
-You can send GraphQL requests using the `useGql` hook or by creating a client with `queryProvider`
+You can send GraphQL requests using the `useGql` hook or by creating a typed client with `queryProvider`.
 
-## `useGql`
+## Basic Usage with `useGql`
 
-First, create a query using the `gql` function (this helps with static typing, we'll cover that later):
+### Creating a Query
 
+Define your GraphQL query using the `gql` function:
 ```jsx filename="queries/users.ts" /gql/
 import { gql } from 'http-react'
 
@@ -25,18 +26,17 @@ const users = gql`
 export default users
 ```
 
-Use the `useGql` hook to use that query:
+### Using the Query
 
+Use the `useGql` hook to execute your query:
 ```jsx
 import { useGql } from 'http-react'
-
-// The users query
 import users from 'queries/users'
 
 export default function Users() {
   const { data, loading } = useGql(users)
 
-  if (loading) return <p>Loading</p>
+  if (loading) return <p>Loading...</p>
 
   if (data.errors) {
     console.log(data.errors)
@@ -56,35 +56,28 @@ export default function Users() {
 ```
 
 <Callout>
-  By default, the `id` of that request (used for request deduplication and sync) will be the query itself. If you need to
-  use the same query with different variables, pass another `id` property when
-  using the `useGql` hook:
-
+  By default, the request Key is the query itself. To use the same query with different variables, provide a custom `key`:
 ```jsx
 function Component1() {
   const { data } = useGql(q, {
-    id: 'query1'
+    key: 'query1'
   })
 }
 
 function Component2() {
   const { data } = useGql(q, {
-    id: 'query2'
+    key: 'query2'
   })
 }
-
-// Both components use the same query but they send different requests
 ```
 
 </Callout>
 
-#### Sending variables
+### Query Variables
 
-It's possible to send variables too. Just pass them in the `variables` property of the `useGql` config
-
+Pass variables to your GraphQL queries using the `variables` option:
 ```jsx
 import { useGql } from 'http-react'
-
 import users from 'queries/users'
 
 export default function Users() {
@@ -94,7 +87,7 @@ export default function Users() {
     }
   })
 
-  if (loading) return <p>Loading</p>
+  if (loading) return <p>Loading...</p>
 
   if (data.errors) {
     console.log(data.errors)
@@ -114,13 +107,11 @@ export default function Users() {
 }
 ```
 
-#### Changing `graphqlPath`
+### Custom GraphQL Endpoint
 
-By default, `useGql` sends requests to the `/graphql` url. This can be changed by passing `graphqlPath`:
-
+By default, `useGql` sends requests to `/graphql`. Change this using the `graphqlPath` option:
 ```jsx
 import { useGql } from 'http-react'
-
 import users from 'queries/users'
 
 export default function Users() {
@@ -131,31 +122,27 @@ export default function Users() {
     graphqlPath: '/graphql/v2'
   })
 
-  // Your jsx here
+  // Your JSX here
 }
 ```
 
-## `queryProvider`
+## Type-Safe Client with `queryProvider`
 
-This function returns a custom React hook with static typing
+Create a fully typed GraphQL client with TypeScript support.
 
-### Creating a client
-
-You can create a client easily and add configurations such as headers, baseUrl, default variables values, etc:
-
-For this, we will be using TypeScript!
-
+### Creating a Typed Client
 ```tsx filename="shared/client.tsx" {56}
 import { queryProvider, gql, defaultCache } from 'http-react'
 
 type UserType = {
   name: string
 }
+
 type UserVariables = {
   id: number
 }
 
-// The first type argument is used for `data` and the second one for `variables`
+// Define queries with type arguments for data and variables
 const user = gql<UserType, UserVariables>`
   query {
     user {
@@ -163,7 +150,8 @@ const user = gql<UserType, UserVariables>`
     }
   }
 `
-// static type of 'data' and 'variables' will be 'any'
+
+// Queries without types will default to 'any'
 const tasks = gql`
   query {
     tasks {
@@ -172,27 +160,25 @@ const tasks = gql`
   }
 `
 
-// Placing all queries together
+// Combine all queries
 const queries = {
   user,
   tasks
 }
 
-// Creating a query provider hook
+// Create a typed query hook
 const useAppQuery = queryProvider(queries, {
   config: {
     cacheProvider: defaultCache,
     headers: {
-      // Headers for all queries
+      // Global headers for all queries
     }
   },
   defaults: {
     tasks: {
-      // Default variables values
       variables: {
         search: ''
       },
-      // The default value (works with SSR)
       value: [],
       headers: {
         Authorization: 'Token token-for-tasks'
@@ -201,7 +187,7 @@ const useAppQuery = queryProvider(queries, {
       graphqlPath: '/graphql-v1'
     },
     user: {
-      variables: {}, // We'll get a typescript error because we are missing 'id'!
+      variables: {}, // TypeScript error: missing required 'id' field
       value: {
         name: ''
       }
@@ -216,60 +202,53 @@ export default useAppQuery
   Learn more about [`cacheProvider`](/docs/api#cacheprovider)
 </Callout>
 
-### Using the client
-
-You can now use the hook created with `queryProvider`
-
+### Using the Typed Client
 ```tsx filename="App.tsx"
 import useAppQuery from 'shared/client'
 
 export default function App() {
   const { data, error } = useAppQuery('user', {
-    defaut: {}, // A typescript error will show because 'name' is not present!
-    variables: {} // Also a typescript error, we are missing id!
+    default: {}, // TypeScript error: missing 'name' property
+    variables: {} // TypeScript error: missing required 'id' field
   })
 
   if (data.errors || error) return <p>Error</p>
 
   return (
     <div>
-      {/* This has static typing */}
+      {/* Fully typed data access */}
       <h2>{data.data.name}</h2>
     </div>
   )
 }
 ```
 
-If you try to use a string that does not exists in the `queries` object, you will get a typescript error!
-
+TypeScript will catch errors if you reference a query that doesn't exist:
 ```jsx
-useQuery('$user') // Will show an error
+useQuery('$user') // TypeScript error
 ```
 
 <Callout>
-  The code above will show the following error: ```txt Argument of type
-  '"$user"' is not assignable to parameter of type '"tasks" | "user"' ```
+  Error message: ```Argument of type '"$user"' is not assignable to parameter of type '"tasks" | "user"' ```
 </Callout>
 
-### `useData`
+### Using `useData` with GraphQL
 
-The `useData` hook has full TypeScript support when passing a query created with `gql`. For instance, let's use the `user` query:
-
+The `useData` hook provides full TypeScript support for GraphQL queries:
 ```jsx
-import { useData } from 'http-react'
+import { useData, useError } from 'http-react'
 import queries from 'shared/client.tsx'
 
 function App() {
-  // Has static typing
+  // Fully typed data access
   const { name } = useData(queries.user) || {}
-
   const error = useError(queries.user)
 
   if (error) return <p>Error</p>
 
   return (
     <div>
-      <h2>Name</h2>
+      <h2>{name}</h2>
     </div>
   )
 }

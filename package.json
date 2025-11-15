@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/atomic-state/http-react.netlify.app.git"
+    "url": "git+https://github.com/atomic-state/http-react-docs.vercel.app.git"
   },
   "author": "danybeltran",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/atomic-state/http-react.netlify.app/issues"
+    "url": "https://github.com/atomic-state/http-react-docs.vercel.app/issues"
   },
-  "homepage": "https://http-react.netlify.app",
+  "homepage": "https://http-react-docs.vercel.app",
   "dependencies": {
     "geist": "^1.3.0",
     "next": "^14.2.3",

@@ -1,36 +1,51 @@
 import { Callout } from 'nextra-theme-docs'
 
-# Getting started
+# Getting Started
 
-### Installation
+## Installation
 
-Using yarn
-
+Install `http-react` using your preferred package manager:
 ```bash copy
 yarn add http-react
 ```
-
-Or with npm
-
 ```bash copy
-npm install --save http-react
+npm install http-react
 ```
 
-### Quick start
+## Quick Start
 
-**Basic example**
+The simplest way to get started is to use `useFetch` directly in your components:
+```jsx
+import useFetch from 'http-react'
 
-**`fetcher` (optional)**
+export default function App() {
+  const { data, isPending, error, responseTime } = useFetch('/api/user-info', {
+    refresh: '30 sec'
+  })
 
-Create a `fetcher` function that will fetch your data
+  if (isPending) return <p>Loading...</p>
+  if (error) return <p>An error occurred</p>
 
+  return (
+    <div>
+      <h2>Welcome, {data.name}</h2>
+      <small>Profile loaded in {responseTime}ms</small>
+    </div>
+  )
+}
+```
+
+This example fetches user data and automatically refreshes it every 30 seconds.
+
+## Custom Fetcher (Optional)
+
+By default, `http-react`  uses the native `fetch` API. You can customize this behavior by providing your own fetcher function:
 ```js
-// This is the default fetcher
+// Default fetcher
 const fetcher = (url, config) => fetch(url, config)
 ```
 
-You can use your favorite fetching library, like axios:
-
+You can use any HTTP library, such as axios:
 ```js
 import axios from 'axios'
 
@@ -38,46 +53,20 @@ const fetcher = (url, config) => axios(url, config)
 ```
 
 <Callout type='info'>
-  Your `fetcher` function must return an object with the `data` and `status`
-  properties. You can replace `data` with a `json` method that returns the data
+  Your custom fetcher must return an object with `data` and `status` properties. Alternatively, you can return an object with a `json()` method that resolves to the data.
 </Callout>
 
-You can start using `useFetch` right away:
-
+Pass your custom fetcher to `useFetch`:
 ```jsx
-import useFetch from 'http-react'
-
-export default function App() {
-  const { data, isPending, error, responseTime } = useFetch('/api/user-info', {
-    refresh: '30 sec', // Refresh profile every 30 seconds
-    fetcher
-  })
-
-  if (isPending) return <p>Loading</p>
-
-  if (error) return <p>An error ocurred</p>
-
-  return (
-    <div>
-      <h2>Welcome, {data.name}</h2>
-      <small>Profile loaded in {responseTime} miliseconds</small>
-    </div>
-  )
-}
+const { data, isPending, error } = useFetch('/api/user-info', {
+  refresh: '30 sec',
+  fetcher
+})
 ```
 
-The first argument passed to `useFetch` is the input of the request; it can be a URL or a `Request` object.
+## Global Configuration (Optional)
 
-By default, the URL this will be used along with the `method` to create a unique id to do things like deduplication and sync the state of a request between hook calls. (in this example, the id will be `GET /api/user-info`)
-
-The second argument is the request configuration. This configuration accepts everything that `fetch` accepts and more. In this example, `refresh` tells `useFetch` to revalidate again 30 seconds after the initial and any subsequent request completes. `refresh` is not part of the native `fetch` configuration, it's one of the many features provided by `http-react`.
-
-### Optional
-
-Wrap your app with the `FetchConfig` component.
-
-You can use it to set global configurations like cache, headers, default (fallback) values for certain requests, configure which requests will trigger [`Suspense`](https://beta.reactjs.org/reference/react/Suspense), etc. It can also be used for SSR and works inside [Server Components](https://beta.nextjs.org/docs/rendering/server-and-client-components)
-
+Use the `FetchConfig` component to set global defaults for all requests in your app:
 ```jsx
 import { FetchConfig } from 'http-react'
 
@@ -86,15 +75,24 @@ export default function App() {
     <FetchConfig
       baseUrl='/api'
       refresh={30}
-      headers={{ Authorization: 'Token' }}
+      headers={{ Authorization: 'Bearer token' }}
       value={{
-        'GET /todos': [] // fallback for `useFetch('/todos')`
+        'GET /todos': [] // Fallback value for useFetch('/todos')
       }}
     >
       <div>
-        <h2>My app</h2>
+        <h2>My App</h2>
       </div>
     </FetchConfig>
   )
 }
 ```
+
+This allows you to configure:
+- Base URL for all requests
+- Default refresh intervals
+- Global headers (like authentication tokens)
+- Fallback values for specific endpoints
+- Suspense boundaries for server-side rendering
+
+`FetchConfig` works with both client components and React Server Components.
