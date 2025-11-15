@@ -1,17 +1,20 @@
 import { Callout } from 'nextra-theme-docs'
 
-# SSR
+# Server-Side Rendering
 
-Server-side-rendering is supported out-of-the-box. When you set a [`default`](/docs/api#default) value in `useFetch`, it will also be server-side-rendered.
+`http-react` supports server-side rendering out of the box. When you set a [`default`](/docs/api#default) value in `useFetch`, that data will be server-side rendered.
 
-Because fetching with `useFetch` doesn't work server-side, you can use the `Client` object, which is very similar to [`Axios`](https://axios-http.com/docs/intro) but sends the request using `fetch` instead of an `XMLHttpRequest`. In case you want to re-use it, it has an `extend` property (similar to `axios.create`)
+## Using the Client API
+
+Since `useFetch` doesn't work server-side, use the `Client` object to fetch data on the server. It provides an API similar to [`Axios`](https://axios-http.com/docs/intro) but uses `fetch` internally instead of `XMLHttpRequest`.
+
+### Traditional SSR (Next.js Pages Router)
 
 Example using Next.js's [`getServerSideProps`](https://nextjs.org/docs/basic-features/data-fetching/get-server-side-props):
-
 ```jsx filename="pages/my-page.tsx"
 import useFetch, { Client } from 'http-react'
 
-// It works inside server and client components
+// Create a reusable API client
 const api = Client.extend({
   baseUrl: 'https://my-api.com',
   headers: {
@@ -20,13 +23,12 @@ const api = Client.extend({
 })
 
 export async function getServerSideProps(context) {
-  // 'loading' does not work here
   const { data } = await api.get('/api/user')
 
   return {
     props: {
       user: data
-    } // will be passed to the page component as props
+    }
   }
 }
 
@@ -43,36 +45,31 @@ export default function MyPage({ user }) {
 }
 ```
 
-#### With Server Components in Next.js:
+## React Server Components (Next.js App Router)
 
-This part covers server-side rendering with Next.js `^13.0.0` (with server components). They work in a differente way from client components. The main difference is that Server components don't ship any JavaScript to the client, thus they are not interactive. This means that things such as `useState` or `createContext` don't work directly inside them. However, they run server-only code, making them perfect for things like layouts and user authentication. Let's look at an example of data fetching in the server using `http-react`:
+Server Components in Next.js 13+ work differently from client components. They don't ship JavaScript to the client and run server-only code, making them ideal for layouts and authentication.
 
-Inside the main layout (a server component):
+### Fetching Data in a Server Component
 
+Inside your root layout (a Server Component):
 ```tsx filename="app/layout.tsx"
 import { cookies } from 'next/headers'
-
 import { FetchConfig, Client } from 'http-react'
-
 import Login from 'components/Login'
 
-export default function Layout({ children }) {
-  // This is only works in server components!
+export default async function Layout({ children }) {
+  // Access cookies (server-only)
   const appSession = cookies().get('appSession')?.value
 
-  const baseUrl = 'https://my-website.com/api'
-  const headers = {
-    Authorization: 'Token ' + appSession
-  }
-
-  // Creating a client
-  // (we can't pass a fetcher function because functions can't be serialized!)
+  // Create an API client
   const api = Client.extend({
-    baseUrl,
-    headers
+    baseUrl: 'https://my-website.com/api',
+    headers: {
+      Authorization: 'Token ' + appSession
+    }
   })
 
-  // This works everywhere
+  // Fetch data on the server
   const { data, error } = await api.get('/auth')
 
   if (error) return <Login />
@@ -81,7 +78,7 @@ export default function Layout({ children }) {
     <FetchConfig
       {...api.config}
       value={{
-        'GET /api/profile': data // This will be SSR!
+        'GET /api/profile': data // Pre-rendered data
       }}
     >
       {children}
@@ -90,15 +87,14 @@ export default function Layout({ children }) {
 }
 ```
 
-Inside `pages/profile.tsx`:
-
+### Accessing Pre-rendered Data in a Client Component
 ```tsx filename="app/profile.tsx"
-'use client' // This marks this component as interactive
+'use client'
 
 import useFetch from 'http-react'
 
 export default function Profile() {
-  const { data } = useFetch('/api/profile') // Data will be preloaded here!
+  const { data } = useFetch('/api/profile') // Data is already loaded!
 
   return (
     <div>
@@ -108,7 +104,8 @@ export default function Profile() {
 }
 ```
 
+The data fetched in the Server Component is automatically available in the Client Component without an additional network request.
+
 <Callout type='info'>
-  Learn more about -> [Server and Client Components
-  (Next.js)](https://beta.nextjs.org/docs/rendering/server-and-client-components)
+  Learn more about [Server and Client Components (Next.js)](https://nextjs.org/docs/app/building-your-application/rendering/server-components)
 </Callout>

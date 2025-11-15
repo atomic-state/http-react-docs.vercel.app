@@ -1,46 +1,42 @@
 import { Callout } from 'nextra-theme-docs'
 
-# Request config
+# Request Configuration
 
 <Callout>
-  This page covers the API specific to `http-react`, not the [Fetch
-  API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). If you want
-  to learn more about it, check out [Using the Fetch
-  API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)
+  This page covers the API specific to `http-react`, not the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). For more about the Fetch API, see [Using the Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch).
 </Callout>
 
-`useFetch` returns an object with this information about the request:
+## Return Values
 
-- `data`: The response data. While data is loading, the returned value will be either the last resolved value (if it exists) or the `default` passed to `useFetch`
-- `config`: The configuration used to send the request
-- `id`: The id of the request
-- `isPending` | `isLoading`: The loading state of the request
-- `refresh`: A function to revalidate and send the request again (this won't work if the request hasn't completed yet)
-- `response`: The response object
-- `responseTime`: The time it took to complete the request (in miliseconds)
-- `online`: If the devices was connected or disconected from the internet (web)
-- `mutate`: A function (a state setter) to mutate data locally (optimistic UI)
-- `fetcher`: An object with diferent methods (`get`, `post`, `delete`, etc) that lets you fetch data imperatively using the configuration passed to `useFetch` (similar to `Axios`)
-- `error`: The error state of the request
-- `code`: The response status code
-- `abort`: A function that lets you cancel the request if it hasn't completed yet
-- `requestStart`: A `Date` object of the time the request was sent (`null` if it doesn't exist yet)
-- `requestEnd`: A `Date` object of the time the request finished (`null` if it doesn't exist yet)
-- `expiration`: A `Date` object of the time the last fetched data will expire (by default it returns `null` because `maxCacheAge` default value is `0 ms`)
-- `success`: Will be `true` if the request completed succesfuly and `loading` is `false`
-- `hasData,`: This is `true` If `data` is **not** `null` or `undefined`
-- `loadingFirst`: Will be `true` if the request is being sent for the first time and `loading` is `true`
+`useFetch` returns an object with the following properties:
+
+- `data` - The response data. During loading, returns either the last resolved value or the `default` value
+- `config` - The configuration used for the request
+- `id` - The unique identifier for the request
+- `isPending` | `isLoading` - Loading state of the request
+- `refresh` - Function to revalidate and resend the request (only works if the request has completed)
+- `response` - The raw response object
+- `responseTime` - Request completion time in milliseconds
+- `online` - Internet connection status (web only)
+- `mutate` - Function to update data locally for optimistic UI updates
+- `fetcher` - Object with methods (`get`, `post`, `delete`, etc.) for imperative fetching using the same configuration
+- `error` - Error state of the request
+- `code` - HTTP status code
+- `abort` - Function to cancel an in-progress request
+- `requestStart` - `Date` when the request was sent (or `null`)
+- `requestEnd` - `Date` when the request completed (or `null`)
+- `expiration` - `Date` when cached data expires (or `null` if `maxCacheAge` is `0 ms`)
+- `success` - `true` if the request completed successfully and is not loading
+- `hasData` - `true` if `data` is not `null` or `undefined`
+- `loadingFirst` - `true` if this is the first request and it's loading
 
 <Callout>
-  If props passed to `useFetch` change while a request is loading, the current
-  request will be cancelled and a new request with the last props will be sent
-  (data dependency). However, this is not the case with `server actions`
+  If props change while a request is loading, the current request is cancelled and a new one is sent with the updated props. This does not apply to server actions.
 </Callout>
 
-By passing additional configuration to `useFetch`, you can configure how data is fetched or decide what to do when certain events happen.
+## Configuration Options
 
-### **Adding static typing:**
-
+### Adding Static Typing
 ```tsx
 type ResponseType = {
   items: []
@@ -49,45 +45,34 @@ type ResponseType = {
 const { data } = useFetch<ResponseType>({ url: '/api' })
 ```
 
----
-
 ### `url`
 
-This is the most important part of the request, and you can pass it in two ways:
-
+The request URL. Can be passed as the first argument or in the config object:
 ```js
 const { data } = useFetch('/api')
 ```
 
-Or
-
+Or:
 ```js
 const { data } = useFetch({ url: '/api' })
 ```
 
----
+### `key`
 
-### `id`
-
-An optional unique id for the request. It can be anything that can be serialized. If `id` is not provided, an id will be created internally using the request `method` and the `url`. For example:
-
+Optional unique identifier for the request. Can be any serializable value. If not provided, a Key is generated from the `method` and `url`:
 ```jsx {2}
 useFetch('/api', {
-  id: 'API'
+  key: 'API'
 })
 ```
 
 <Callout>
-  The id of that request will be `API`. If you wouldn't have passed it, it would
-  be `GET /api`
+  The request Key will be `'API'`. Without a custom Key, it would be `'GET /api'`.
 </Callout>
-
----
 
 ### `default`
 
-The default value that will be returned while the request is completing. If a cache in the `cacheProvider` exists for that particular request, that will be returned instead.
-
+Default value returned while the request is loading. If cached data exists, it takes precedence:
 ```jsx {2-5}
 const { data } = useFetch('/info', {
   default: {
@@ -100,61 +85,47 @@ return <p>{data.name}</p>
 ```
 
 <Callout type='info'>
-  In this case, the TypeScript type of `data` will be inferred from `default`.
-  However, if a type was specified (see [here](/docs/api#adding-static-typing)),
-  this would show an error if the type of `default` doesn't match
+  TypeScript will infer the type of `data` from `default`. If you explicitly specify a type, TypeScript will validate that `default` matches that type.
 </Callout>
-
----
 
 ### `baseUrl`
 
-Override the `baseUrl` defined gloabally (we'll cover that later)
-
+Overrides the globally defined `baseUrl`:
 ```jsx {2}
 const { data } = useFetch('/info', {
   baseUrl: '/api'
 })
-// The final url will be '/api/info'
+// Final URL: '/api/info'
 ```
-
----
 
 ### `maxCacheAge`
 
-The max time a cached version of the data should be stored in the `cacheProvider`. After this time, the data will be considered as `expired` and a new request will be sent. If data has not expired, no request will be sent. This still works when navigating between components and pages (as long as the page is not reloaded). If `cacheProvider` is based on persistence, reloading the page or restarting the app will not revalidate if the data has not expired.
-
+Maximum time to cache data before it's considered expired. After expiration, a new request is sent. Works across navigation as long as the page isn't reloaded:
 ```jsx {2}
 const { data, expiration } = useFetch('/info', {
-  maxCacheAge: '0.5 h' // Data will be valid for 30 minutes.
+  maxCacheAge: '0.5 h' // Cache for 30 minutes
 })
 
-return <p>Data will expire at: {expiration?.toLocaleTimeString()}</p>
+return <p>Expires at: {expiration?.toLocaleTimeString()}</p>
 ```
 
 <Callout>
-  **Note**: If `maxCache` age changes at some point, the cached data will be
-  automatically marked as `expired` and a new request will be sent.
+  If `maxCacheAge` changes, cached data is automatically marked as expired and a new request is sent.
 </Callout>
----
 
 ### `cacheIfError`
 
-If `true`, the last resolved `data` will be returned if a request fails. Otherwhise, the `default` value passed will be returnd. If there is no `default` value, `null` will be returned instead:
-
+If `true` (default), returns the last successful data when a request fails. If `false`, returns the `default` value or `null`:
 ```jsx {2}
 const { data } = useFetch('/info', {
-  cacheIfError: false, // Default is 'true'
-  default: {} // This will be returned if the request fails
+  cacheIfError: false,
+  default: {} // Returned if request fails
 })
 ```
 
----
-
 ### `body`
 
-The request body (for requests that use POST, DELETE etc)
-
+Request body for POST, PUT, PATCH, DELETE, etc.:
 ```jsx {3-6}
 const { data } = useFetch('/save-work', {
   method: 'POST',
@@ -166,17 +137,12 @@ const { data } = useFetch('/save-work', {
 ```
 
 <Callout type='info'>
-  By default, `body` will be serialized as JSON, but you can also change that
-  with [`formatBody`](#formatbody) (you can set the `Content-Type` header and
-  the `formatBody` function)
+  By default, `body` is serialized as JSON. Use [`formatBody`](#formatbody) to customize serialization and set the `Content-Type` header.
 </Callout>
-
----
 
 ### `formatBody`
 
-Configure how the request body is sent in the request. In this example, the title will be sent in uppercase
-
+Customize how the request body is formatted. Example with uppercase transformation:
 ```jsx {7-12}
 const { data } = useFetch('/save-work', {
   method: 'PATCH',
@@ -193,8 +159,7 @@ const { data } = useFetch('/save-work', {
 })
 ```
 
-Another example, with `FormData`:
-
+Example with FormData:
 ```jsx {5,9,11,13}
 import { usePOST, revalidate } from 'http-react'
 import { useState } from 'react'
@@ -203,12 +168,12 @@ export default function App() {
   const [formData, setFormData] = useState(new FormData())
 
   const { data, id } = usePOST('/api/user-info', {
-    auto: false, // Send the request only when the button is clicked
+    auto: false,
     body: formData,
     headers: {
-      'Content-Type': 'multipart/formdata'
+      'Content-Type': 'multipart/form-data'
     },
-    formatBody: (rawBody) => rawBody // This will send the body as FormData
+    formatBody: (rawBody) => rawBody // Send as FormData
   })
 
   return (
@@ -220,12 +185,9 @@ export default function App() {
 }
 ```
 
----
-
 ### `params`
 
-URL params (like Express)
-
+URL parameters using bracket or colon notation:
 ```jsx {2-4}
 const { data } = useFetch('/todos/[id]', {
   params: {
@@ -235,11 +197,10 @@ const { data } = useFetch('/todos/[id]', {
 ```
 
 <Callout type='info'>
-  The url will be `/todos/3`, and the request id will be `GET /todos/[id]`
+  Final URL: `'/todos/3'`. Request Key: `'GET /todos/[id]'`
 </Callout>
 
-You can also use `:`
-
+Colon notation:
 ```jsx
 const { data } = useFetch('/todos/:id', {
   params: {
@@ -248,8 +209,7 @@ const { data } = useFetch('/todos/:id', {
 })
 ```
 
-Or both
-
+Mixed notation:
 ```jsx
 const { data } = useFetch('/[resource]/:id', {
   params: {
@@ -259,43 +219,22 @@ const { data } = useFetch('/[resource]/:id', {
 })
 ```
 
-If a param does not exists, you will get a warning in the console, and it will not be parsed. For example:
+Missing parameters trigger console warnings and remain unparsed.
 
-```jsx
-const { data } = useFetch('/[resource]/:id', {
-  methos: 'POST',
-  params: {
-    id: 3
-  }
-})
-```
-
-That will show you a warning in the console saying `Param 'resource' does not exist in request configuration for '/[resource]/:id'`
-
-<Callout>
-  The url will be `resource/3`, and the `id` will be `POST /[resource]/:id`
-</Callout>
-
-<br />
-
-`http-react` also exposes a helper function to parse request params in a string:
-
+Helper function for parsing parameters:
 ```jsx {1,5}
 import { setURLParams } from 'http-react'
 
 const userParams = { path: 'users', id: 10 }
 
-const userUrl = setURLParams('/api/[path]/[id]', userParams) // --> /api/users/10
+const userUrl = setURLParams('/api/[path]/[id]', userParams) // '/api/users/10'
 ```
 
-<Callout>Params must be separated using `/`</Callout>
-
----
+<Callout>Parameters must be separated by `/`</Callout>
 
 ### `query`
 
-The request URL search params
-
+URL search parameters:
 ```jsx {2-5}
 const { data } = useFetch('/search', {
   query: {
@@ -303,60 +242,45 @@ const { data } = useFetch('/search', {
     end_date: '2023-01-03'
   }
 })
-
-// The url will be '/search?start_date=2023-01-02&end_date=2023-01-03'
+// Final URL: '/search?start_date=2023-01-02&end_date=2023-01-03'
 ```
-
----
 
 ### `cancelOnChange` and `onAbort`
 
-`cancelOnChange` is `true` by default. This will cancel the current request when props change. The `onAbort` function will run when the request gets cancelled. This is a pagination example
-
+By default, requests are cancelled when props change. Use `onAbort` to handle cancellations:
 ```jsx {4-7}
 const [page, setPage] = useState(1)
 
 const { data } = useFetch('/items', {
   cancelOnChange: true,
   onAbort() {
-    console.log('The request was cancelled')
+    console.log('Request cancelled')
   },
-  config: {
-    query: {
-      // every time page changes, the current request will be cancelled
-      page
-    }
+  query: {
+    page // Changing page cancels the current request
   }
 })
 ```
 
----
-
 ### `refresh`
 
-This tells `useFetch` how much time should pass after a request is completed to make a new request.
-This means that a new request will be sent `x` amount of time after the current request is completed.
+Automatically resend requests after a specified interval following completion. Accepts milliseconds or a string with units:
 
-Refresh can be a number (if so, it will be taken as miliseconds) or a string. You can pass a number and a unit of time separated by space. These units are:
-
-- `ms` -> miliseconds
-- `sec` -> seconds
-- `min` -> minutes
-- `h` -> hours
-- `d` -> days
-- `we` -> weeks
-- `mo` -> months
-- `y` -> years
+- `ms` - milliseconds
+- `sec` - seconds
+- `min` - minutes
+- `h` - hours
+- `d` - days
+- `we` - weeks
+- `mo` - months
+- `y` - years
 
 <Callout type='info'>
-  These units of time also apply to [`attemptInterval`](#attemptinterval) and
-  [`debounce`](#debounce)
+  These units also apply to [`attemptInterval`](#attemptinterval) and [`debounce`](#debounce).
 </Callout>
-
 ```jsx {3}
-// This will revalidate 5 seconds after the current request completes
 const { data } = useFetch('/api', {
-  refresh: '5 sec',
+  refresh: '5 sec', // Revalidate 5 seconds after completion
   default: {}
 })
 
@@ -368,110 +292,86 @@ return (
 )
 ```
 
-Another example:
-
+Fractional values:
 ```js {3}
-// This would be the same as passing '30 min'
 const { data } = useFetch('/api', {
-  refresh: '0.5 h',
+  refresh: '0.5 h', // Same as '30 min'
   default: {}
 })
 ```
 
----
-
 ### `onResolve`
 
-The `onResolve` function will once run when the request completes succesfuly
-
+Runs once when a request completes successfully:
 ```jsx {2-4}
 useFetch('/api', {
   onResolve(data) {
-    console.log('Data loaded', data)
+    console.log('Data loaded:', data)
   }
 })
 ```
 
-You can also use the `useResolve` function to subscribe to requests and do something when they complete susccesfuly (this works like a useEffect that runs when the request completes).
-
-To do this, pass the request id to `useResolve`:
-
+Use `useResolve` to subscribe to request completion from other components:
 ```jsx {5-7}
-// somewhere in a component
+// Component A
 useFetch('/api', { method: 'POST' })
 
-// Somewhere else in another component
+// Component B
 useResolve('POST /api', (data) => {
-  console.log('Data was fetched from another component', data)
+  console.log('Data fetched from another component:', data)
 })
 ```
 
 <Callout>
-
-**Important**
-
-`onResolve` will only run one time when the request completes, even if you are re-using a request in multiple components. This ensures that operations that depend on `onResolve` run only once.
-
-If you want to do any operations that can't be place in the `onResolve` function for any reason, or want to add effects that run when the request completes, you can use the `useResolve` hook instead.
-
+**Important**: `onResolve` runs only once per request, even when reused across multiple components. Use `useResolve` for multiple subscribers.
 </Callout>
 
-In this example, three effects are subscribed to a request with id `POST /api`:
-
+Multiple subscribers example:
 ```js
 const requestId = 'POST /api'
 
 useResolve(requestId, (data) => {
-  console.log('Data was fetched from another component', data)
+  console.log('Subscriber 1:', data)
 })
 
 useResolve(requestId, (data) => {
-  console.log('Another subscriber', data)
+  console.log('Subscriber 2:', data)
 })
 
 useResolve(requestId, (data) => {
-  console.log('Next.js is awesome!', data)
+  console.log('Subscriber 3:', data)
 })
 ```
 
-<Callout type='info'>This also applies to [`onError`](#onerror)</Callout>
-
----
+<Callout type='info'>This pattern also applies to [`onError`](#onerror).</Callout>
 
 ### `onError`
 
-The `onError` function will run when the request fails
-
+Runs when a request fails:
 ```jsx {2-4}
 useFetch('/api', {
   onError(error) {
-    console.log('An error ocurred', error)
+    console.log('Error occurred:', error)
   }
 })
 ```
 
-Same as `onResolve`, you can subscribe to the `error` state somewhere else in your app:
-
+Subscribe to errors from other components:
 ```jsx {5-7}
-// somewhere in your app
+// Component A
 useFetch('/api', { method: 'POST' })
 
-// Somewhere else in your app
+// Component B
 const error = useError('POST /api', () => {
-  console.log('An error ocurred in this request')
+  console.log('Request failed')
 })
 
 if (error) return <p>Error</p>
-
-return null
 ```
-
----
 
 ### `onOffline`
 
-The `onOffline` function will run when internet conection is lost
-
+Runs when internet connection is lost:
 ```jsx {2-4}
 useFetch('/api', {
   onOffline() {
@@ -480,12 +380,9 @@ useFetch('/api', {
 })
 ```
 
----
-
 ### `onOnline`
 
-The `onOnline` function will run when internet conection is restored
-
+Runs when internet connection is restored:
 ```jsx {2-4}
 useFetch('/api', {
   onOnline() {
@@ -494,24 +391,18 @@ useFetch('/api', {
 })
 ```
 
----
-
 ### `retryOnReconnect`
 
-If `true` (default), a new request will be sent when the conection is restored after a disconection
-
+If `true` (default), automatically retries the request when connection is restored:
 ```jsx {2}
 useFetch('/api', {
   retryOnReconnect: true
 })
 ```
 
----
-
 ### `revalidateOnFocus`
 
-If `true` (default is `false`), a new request will be sent when the window is focused
-
+If `true`, resends the request when the window regains focus:
 ```jsx {2}
 useFetch('/api', {
   revalidateOnFocus: true
@@ -519,16 +410,12 @@ useFetch('/api', {
 ```
 
 <Callout>
-  A new request won't be sent if there is already a request running.
-  `http-react` keeps track of requests that are still loading.
+  Requests won't be sent if one is already in progress. http-react tracks loading states automatically.
 </Callout>
-
----
 
 ### `resolver`
 
-The `resolver` function returns the value that will be returned as `data`. By default, it tries to parse the response body as JSON.
-
+Customizes how response data is extracted. Default behavior parses JSON:
 ```jsx {2-5}
 const { data } = useFetch('/api/cat.jpg', {
   async resolver(response) {
@@ -537,31 +424,23 @@ const { data } = useFetch('/api/cat.jpg', {
   }
 })
 
-return <img src={data} />
+return <img src={data} alt="Cat" />
 ```
 
-The example above can be replaced with the `useBlob` hook, which is exactly the same, but converts the request into a blob:
-
+Simplified using `useBlob`:
 ```jsx
 const { data } = useBlob('/api/cat.jpg', { objectURL: true })
 
-return <img src={data} />
+return <img src={data} alt="Cat" />
 ```
 
 <Callout type='info'>
-  In this example, `objectURL` is `true` because what the UI neededs is an
-  [object
-  URL](https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL) of
-  the image. If you don't pass `objectURL`, `data` will be a
-  [`Blob`](https://developer.mozilla.org/en-US/docs/Web/API/Blob)
+  When `objectURL` is `true`, `data` is an [object URL](https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL). Otherwise, it's a [`Blob`](https://developer.mozilla.org/en-US/docs/Web/API/Blob).
 </Callout>
-
----
 
 ### `auto`
 
-If `auto` is set to false, requests will only be sent by calling the `reFetch` function returned from `useFetch` or using the `revalidate` function from anywhere in your app
-
+If `false`, requests are only sent by calling `reFetch` or using the `revalidate` function:
 ```jsx {2}
 const { data, reFetch } = useFetch('/api', {
   auto: false,
@@ -577,16 +456,12 @@ return (
 ```
 
 <Callout type='warning'>
-  Don't set `auto` to `false` and `suspense` to `true` in the same request,
-  because it will never be sent and the UI will always show `fallback`!
+  Never set both `auto: false` and `suspense: true` — the request will never be sent and the fallback UI will persist indefinitely.
 </Callout>
-
----
 
 ### `debounce` (unstable)
 
-With debounce, a request will be debounced by `x` ammount of time after props passed to `useFetch` change.
-
+Delays requests until a specified time after props stop changing:
 ```jsx {13}
 import { useState } from 'react'
 import useFetch from 'http-react'
@@ -595,25 +470,25 @@ export default function ExpensiveSearch() {
   const [search, setSearch] = useState('')
 
   const { data } = useFetch('/search', {
-    auto: search.length > 0, // only if search is not empty
+    auto: search.length > 0,
     default: [],
     query: {
       q: search
     },
-    debounce: '2 sec' // Wait for 2 seconds, then send a new request
+    debounce: '2 sec' // Wait 2 seconds after changes
   })
 
   return (
     <div>
       <input
         value={search}
-        onClick={(e) => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
         placeholder='Search items'
       />
       {search ? (
-        <p>Total items found: {data.length}</p>
+        <p>Found: {data.length} items</p>
       ) : (
-        <p>Start typing something</p>
+        <p>Start typing...</p>
       )}
     </div>
   )
@@ -621,24 +496,16 @@ export default function ExpensiveSearch() {
 ```
 
 <Callout>
-  **Note**: Using `debounce` directly inside `useFetch` is unstable. Use the
-  [`useDebounceFetch`](/docs/all_hooks#usedebouncefetch) hook instead.
+  Using `debounce` directly is unstable. Use [`useDebounceFetch`](/docs/all_hooks#usedebouncefetch) instead.
 </Callout>
 
 <Callout type='info'>
-
-See [Debounce – How to Delay a Function in JavaScript (JS ES6
-Example)](https://www.freecodecamp.org/news/javascript-debounce-example/) by
-Ondrej Polesny
-
+  Learn more: [Debounce – How to Delay a Function in JavaScript](https://www.freecodecamp.org/news/javascript-debounce-example/) by Ondrej Polesny
 </Callout>
-
----
 
 ### `attempts`
 
-This tells `useFetch` how many times a request should be sent again if the initial request fails. This number is reset after a request completes succesfuly so it can be reused in subsequent failed requests.
-
+Number of retry attempts after a failed request. Resets after successful completion:
 ```jsx {2}
 const { data, reFetch } = useFetch('/api', {
   attempts: 4,
@@ -647,7 +514,7 @@ const { data, reFetch } = useFetch('/api', {
 
 return (
   <div>
-    <button onClick={reFetch}>Refresh data</button>
+    <button onClick={reFetch}>Refresh</button>
     <p>{data.name}</p>
   </div>
 )
@@ -655,71 +522,56 @@ return (
 
 ### `attemptInterval`
 
-This is the time interval between each attempt after a request fails. By default it's `2 ms`
-
+Time interval between retry attempts. Default is `2 ms`:
 ```jsx {3}
 const { data, reFetch, online } = useFetch('/api', {
   attempts: 4,
   attemptInterval: '2 sec',
   default: {}
 })
-// If the request fails, retry 4 times with an interval of 2 seconds between each attempt
+// Retry 4 times with 2-second intervals
 
 return (
   <div>
-    <button onClick={reFetch}>Refresh data</button>
+    <button onClick={reFetch}>Refresh</button>
     <p>{data.name}</p>
-    {online ? <p>Server is up</p> : <p>The server may be down</p>}
+    {online ? <p>Server is up</p> : <p>Server may be down</p>}
   </div>
 )
 ```
 
----
-
 ### `memory` (deprecated)
 
 <Callout>
-  For consistency, this feature was deprecated as initial data is returned from
-  cache.
+  Deprecated for consistency. Initial data is now always returned from cache.
 </Callout>
 
-By default it's `true`. If `false`, the initial data will always be taken from the `default` property and not from `cacheProvider` or in-memory cache.
-
+When `false`, initial data always comes from the `default` property instead of cache:
 ```jsx {2}
-const myResponse = useFetch('/api', {
+const { data, reFetch } = useFetch('/api', {
   memory: false,
   default: {}
 })
 
-const { data, reFetch, online } = myResponse
-
 return (
   <div>
-    <button onClick={reFetch}>Refresh data</button>
+    <button onClick={reFetch}>Refresh</button>
     <p>{data.name}</p>
   </div>
 )
 ```
 
 <Callout type='warning'>
-  Setting `memory` to `false` is not recommended because it can lead to [layout
-  shifts](https://developers.google.com/publisher-tag/guides/minimize-layout-shift)
-  (which can end up in a bad UX!) and would make the UI less
-  [consistent](https://www.youtube.com/watch?v=3hccXiXI0u8)
+  Setting `memory: false` is not recommended as it can cause [layout shifts](https://web.dev/cls/) and inconsistent UI.
 </Callout>
-
----
 
 ### `revalidateOnMount`
 
-This tells `useFetch` whether or not a request should be sent again when the component initializing it is re-mounted but the props used in that request haven't changed.
+Controls whether requests are resent when a component remounts with unchanged props. Useful for:
 
-This is very useful in certain scenarios. Some examples include:
-
-- A request should be sent only once during the [application lifecyle](https://reactjs.org/docs/state-and-lifecycle.html).
-- A request should not be sent when going back or forward in the navigation (as long as previous props passed to `useFetch` are presereved in some way, or you are using [Next.js's layouts](https://nextjs.org/docs/basic-features/layouts))
-- A request should be sent **only** when props change, even when navigating between components or pages (in Web, as long as navigating between pages doesn't trigger a full page reload)
-
+- Requests that should only be sent once per application lifecycle
+- Preserving data when navigating back/forward
+- Expensive operations that shouldn't repeat unnecessarily
 ```jsx {2}
 const { data, reFetch } = useFetch('/some-expensive-resource', {
   revalidateOnMount: false,
@@ -730,17 +582,18 @@ const { data, reFetch } = useFetch('/some-expensive-resource', {
 
 return (
   <div>
-    <button onClick={reFetch}>Request expensive data again</button>
+    <button onClick={reFetch}>Refresh</button>
     <p>{data.name}</p>
   </div>
 )
 ```
 
-When is this **not** helpful?
+**When this doesn't work:**
 
-- Props passed to `useFetch` depend on component-level state that is reset between renders
-- Props passed to `useFetch` change between renders (e.g. they receive a value that depends on `Math.random()`, `Date.now()` or `crypto.randomUUID()`. However, if that value is preserved, for example, by using [`useMemo`](https://beta.reactjs.org/reference/react/useMemo), it will work)
+- Props depend on component-level state that resets between renders
+- Props include values from `Math.random()`, `Date.now()`, or `crypto.randomUUID()` (unless memoized)
 
+Example of problematic usage:
 ```jsx {7,11}
 import useFetch from 'http-react'
 
@@ -752,7 +605,7 @@ function WillAlwaysRevalidateOnMount() {
     default: {
       name: ''
     },
-    id: Math.random(),
+    id: Math.random(), // Random ID causes revalidation every time
     query: {
       page
     }
@@ -760,25 +613,24 @@ function WillAlwaysRevalidateOnMount() {
 
   return (
     <div>
-      <button onClick={reFetch}>Request expensive data again</button>
+      <button onClick={reFetch}>Refresh</button>
       <p>{data.name}</p>
     </div>
   )
 }
 ```
 
-To prevent this, you can use a state management library (or Context) that preserves that state. For example, you can use [atomic-state](https://atomic-state.netlify.app) and rewrite that component:
-
+Solution using state management:
 ```jsx {2,4-7,10,13}
 import useFetch from 'http-react'
 import { atom, useAtom } from 'atomic-state'
 
 const pageState = atom({
-  name: 'page',
+  key: 'page',
   default: 1
 })
 
-function WillNotNecesarilyRevalidateOnMount() {
+function WillNotNecessarilyRevalidateOnMount() {
   const [page, setPage] = useAtom(pageState)
 
   const { data, reFetch } = useFetch('/some-expensive-resource', {
@@ -793,7 +645,7 @@ function WillNotNecesarilyRevalidateOnMount() {
 
   return (
     <div>
-      <button onClick={reFetch}>Request expensive data again</button>
+      <button onClick={reFetch}>Refresh</button>
       <p>{data.name}</p>
     </div>
   )
@@ -801,23 +653,17 @@ function WillNotNecesarilyRevalidateOnMount() {
 ```
 
 <Callout type='info'>
-  `Atomic State` is a state management library that provides an API that is very
-  similar to [`useState`](https://reactjs.org/docs/hooks-state.html) in React
-  with hooks (`>=16.8`) and has many features that can make state management
-  easier. Read more at [Atomic State](https://atomic-state.netlify.app)
+  [Atomic State](https://atomic-state.vercel.app) provides a `useState`-like API with persistent state management across component lifecycles.
 </Callout>
-
----
 
 ### `onPropsChange`
 
-This function will run when the props passed to `useFetch` change
-
+Runs when props passed to `useFetch` change:
 ```jsx {5-7}
 function App() {
   const [page, setPage] = useState(1)
 
-  const { data, reFetch } = useFetch('/items', {
+  const { data } = useFetch('/items', {
     onPropsChange({ previousProps, props }) {
       console.log('Props changed from', previousProps, 'to', props)
     },
@@ -829,11 +675,7 @@ function App() {
 
   return (
     <div>
-      <button
-        onClick={() => {
-          setPage((previousPage) => previousPage + 1)
-        }}
-      >
+      <button onClick={() => setPage((prev) => prev + 1)}>
         Next page
       </button>
       <p>Total items: {data.length}</p>
@@ -842,12 +684,9 @@ function App() {
 }
 ```
 
----
-
 ### `suspense`
 
-`Suspense` is used when you want to pause the rendering of a component and resume it until some data is ready (usually, this is when an asynchronus operation like an `HTTP Request` triggered by the component is completed). This is very useful if, for example, you want to wait until all requests are completed to render the UI to the user, or to leverage the loading state of the UI to [`<React.Suspense>`](https://beta.reactjs.org/reference/react/Suspense). If you want to use Suspense, pass `suspense` to the `useFetch` config:
-
+Enables React Suspense for the request. Useful for coordinating loading states:
 ```jsx {9}
 import { Suspense } from 'react'
 import useFetch from 'http-react'
@@ -862,8 +701,8 @@ function Profile() {
 
   return (
     <div>
-      <p>Your name: {data.name}</p>
-      <p>Your email: {data.email}</p>
+      <p>Name: {data.name}</p>
+      <p>Email: {data.email}</p>
     </div>
   )
 }
@@ -872,7 +711,7 @@ export default function App() {
   return (
     <div>
       <h2>My profile</h2>
-      <Suspense fallback={<p>Loading profile</p>}>
+      <Suspense fallback={<p>Loading profile...</p>}>
         <Profile />
       </Suspense>
     </div>
@@ -880,10 +719,9 @@ export default function App() {
 }
 ```
 
-**Suspense with SSR**
+**Suspense with SSR:**
 
-If you are using SSR, you can use `SSRSuspense`. It's a wrapper component around `React.Suspense` that can prevent server/hydration errors while still showing `fallback` in the SSR page:
-
+Use `SSRSuspense` to prevent hydration errors while showing fallback UI:
 ```jsx {1,8,23,25}
 import useFetch, { SSRSuspense } from 'http-react'
 
@@ -897,8 +735,8 @@ function Profile() {
 
   return (
     <div>
-      <p>Your name: {data.name}</p>
-      <p>Your email: {data.email}</p>
+      <p>Name: {data.name}</p>
+      <p>Email: {data.email}</p>
     </div>
   )
 }
@@ -907,7 +745,7 @@ export default function App() {
   return (
     <div>
       <h2>My profile</h2>
-      <SSRSuspense fallback={<p>Loading profile</p>}>
+      <SSRSuspense fallback={<p>Loading profile...</p>}>
         <Profile />
       </SSRSuspense>
     </div>
@@ -915,15 +753,10 @@ export default function App() {
 }
 ```
 
----
-
 ### `cacheProvider`
 
-This is an object that can be used as a local cache. It should have the following shape:
-
+Custom cache implementation for storing request data. Must implement:
 ```ts
-// The actual type definition that you can import from 'http-react'
-
 export type CacheStoreType = {
   get(k?: any): any
   set(k?: any, v?: any): any
@@ -931,8 +764,7 @@ export type CacheStoreType = {
 }
 ```
 
-For example, you can use the `storage` object provided by [`atomic-state`](https://atomic-state.netlify.app/). It's a wrapper around [`Window.localStorage`](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage):
-
+Example using `localStorage` via `atomic-state`:
 ```jsx {2,7}
 import useFetch from 'http-react'
 import { storage } from 'atomic-state'
@@ -945,8 +777,8 @@ export default function App() {
 
   return (
     <div>
-      <h2>This data is cached in localStorage</h2>
-      <pre>{JSON.stringify(data, null)}</pre>
+      <h2>Data cached in localStorage</h2>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>
   )
 }

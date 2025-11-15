@@ -1,9 +1,12 @@
 import { Callout } from 'nextra-theme-docs'
 
-# searchParams and params
+# URL Parameters and Search Params
 
-You can set global params and global URL search params. For example:
+You can set global URL parameters and search params using `FetchConfig`, which will be automatically applied to all requests within its component tree.
 
+## Dynamic URL Parameters
+
+Define routes with parameter placeholders using bracket notation:
 ```tsx filename="components/profile.tsx"
 export default function Profile() {
   const { data } = useFetch('/[userId]/profile')
@@ -11,7 +14,6 @@ export default function Profile() {
   return <div>Hello, {data.name}</div>
 }
 ```
-
 ```tsx filename="components/messages.tsx"
 export default function Messages() {
   const { data } = useFetch('/[userId]/messages')
@@ -20,8 +22,9 @@ export default function Messages() {
 }
 ```
 
-Inside `App.tsx`:
+## Global Configuration
 
+Configure parameters and search params globally in `FetchConfig`:
 ```tsx filename="src/App.tsx" {10-15}
 import { FetchConfig } from 'http-react'
 
@@ -46,14 +49,15 @@ export default function App() {
 }
 ```
 
-Now, the url string will be:
+## Result
 
-- `/[userId]/profile` -> `/some-user-id/profile?date=2024-01-23`
-- `/[userId]/messages` -> `/some-user-id/messages?date=2024-01-23`
+The URLs will be automatically constructed with the provided parameters and search params:
+
+- `/[userId]/profile` → `/api/some-user-id/profile?date=2024-01-23`
+- `/[userId]/messages` → `/api/some-user-id/messages?date=2024-01-23`
 
 <Callout type="info">
 Learn more about [`params`](/docs/api#params)
 
 Learn more about [`query`](/docs/api#query)
-
 </Callout>

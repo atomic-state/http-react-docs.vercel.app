@@ -2,13 +2,14 @@ import { Callout } from 'nextra-theme-docs'
 
 # `FetchConfig`
 
-The `FetchConfig` component is used to set global properties that will be used by `useFetch` in any descendant component, like `SSR`, `value` (fallback), an more.
+The `FetchConfig` component sets global configuration for all `useFetch` calls within its component tree. This includes settings like headers, base URLs, fallback values, caching behavior, and more.
 
-Keep in mind that you can still configure individual requests.
+Individual requests can still override these global settings with their own configuration.
 
-Wrap your app with the `FetchConfig` component:
+## Basic Usage
 
-```jsx {1,5,16}
+Wrap your app or specific sections with `FetchConfig`:
+```jsx {1,5,14} copy
 import { FetchConfig } from 'http-react'
 
 export default function App({ children }) {
@@ -27,9 +28,12 @@ export default function App({ children }) {
 }
 ```
 
-With the configuration above, every `useFetch` call under that react tree will send the same `Authorization` header. However, this can be changed per request or by using `FetchConfig` somewhere else:
+With this configuration, every `useFetch` call within the component tree will automatically include the `Authorization` header.
 
-```jsx {10-13,18-21}
+## Nested Configuration
+
+You can nest multiple `FetchConfig` components to apply different settings to different parts of your app:
+```jsx {10-13,18-21} copy
 import useFetch, { FetchConfig } from 'http-react'
 
 import LegacyComponent from '@components/legacy'
@@ -59,42 +63,43 @@ export default function App() {
 }
 ```
 
-You can also change how data is stored. For example, by using `storage`, provided by `atomic-state`:
+## Custom Cache Provider
 
-```jsx
+Customize how data is cached by providing a custom cache provider:
+```jsx copy
 import { FetchConfig } from 'http-react'
 import { storage } from 'atomic-state'
 
 export default function App({ children }) {
   return (
-    <div>
-      <FetchConfig baseUrl='/api' cacheProvider={storage}>
-        {children}
-      </FetchConfig>
-    </div>
+    <FetchConfig baseUrl='/api' cacheProvider={storage}>
+      {children}
+    </FetchConfig>
   )
 }
 ```
 
-You can also make `useFetch` revalidate when the window is focused again:
+## Revalidation Options
 
-```jsx
+Configure when requests should automatically revalidate:
+```jsx copy
 import { FetchConfig } from 'http-react'
 
 export default function App({ children }) {
   return (
-    <div>
-      <FetchConfig revalidateOnFocus revalidateOnMount={false}>
-        {children}
-      </FetchConfig>
-    </div>
+    <FetchConfig revalidateOnFocus revalidateOnMount={false}>
+      {children}
+    </FetchConfig>
   )
 }
 ```
 
-If you are using server components you can pass promises as fallback values (keep in mind that this works **only** in server components):
+This configuration will revalidate data when the browser window regains focus.
 
-```jsx
+## Server Component Integration
+
+In React Server Components, you can pass promises as fallback values without awaiting them:
+```jsx copy
 import { FetchConfig } from 'http-react'
 
 function getTodos() {
@@ -105,7 +110,7 @@ export function MyServerComponent({ children }) {
   return (
     <FetchConfig
       value={{
-        todos: getTodos() // No await needed!
+        todos: getTodos() // Promise is passed directly
       }}
     >
       <div>{children}</div>
@@ -114,8 +119,7 @@ export function MyServerComponent({ children }) {
 }
 ```
 
-Then in your client component:
-
+Then access the data in your client component:
 ```tsx
 'use client'
 
@@ -123,7 +127,7 @@ import useFetch from 'http-react'
 
 export default function Todos() {
   const { data } = useFetch('/todos', {
-    id: 'todos' // This will replace 'GET /todos' for 'todos' as the request id
+    key: 'todos' // Custom Key matches the key in FetchConfig
   })
 
   return (
